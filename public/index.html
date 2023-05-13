@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="shortcut icon" href="./img/favicon.png" type="image/png" />
+    <link rel="stylesheet" href="./css/styles.css" />
+    <title>WBPriceScrap</title>
+  </head>
+  <body>
+    <main>
+      <div class="content-wrapper">
+        <h1>-WBPriceScrap-</h1>
+        <div class="input-block">
+          <form method="post" class="input-form" action="/">
+            <div>
+              <input type="text" name="inputData" id="dataInput" />
+              <button id="loadDataBtn" type="submit">ЗАГРУЗИТЬ ДАННЫЕ</button>
+            </div>
+            <div class="processHandleWrapper">
+              <p>
+                <span>&#8727;</span>ДАННЫЕ МОЖНО ВВОДИТЬ ЧЕРЕЗ ПРОБЕЛЫ ИЛИ
+                ЗАПЯТЫЕ
+              </p>
+              <div>
+                <input
+                  type="checkbox"
+                  id="processOnlyCardData"
+                  name="processOnlyCardData"
+                />
+                <label for="processOnlyCardData"
+                  >Поиск предложений только в карточке товара</label
+                >
+              </div>
+              <div>
+                <input
+                  type="checkbox"
+                  id="processOutOfStock"
+                  name="processOutOfStock"
+                />
+                <label for="processOutOfStock"
+                  >Обрабатывать только позиции которые есть в наличии</label
+                >
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="app-block">
+          <p>
+            ВСЕГО ЗАГРУЖЕННО ОБЪЕКТОВ В ОБРАБОТКУ:
+            <span id="qttInWork">0</span>
+          </p>
+        </div>
+        <div class="parser-result-block">
+          <div class="parser-result"></div>
+        </div>
+        <div class="bottom-block">
+          <button type="button" id="loadData">ЗАГРУЗИТЬ РЕЗУЛЬТАТЫ</button>
+          <button type="button" id="deleteData">УДАЛИТЬ ДАННЫЕ</button>
+          <a class="dowload-link" id="download-file" href="#"
+            ><button type="button" class="download" id="loadBook">
+              СКАЧАТЬ ФАЙЛ
+            </button></a
+          >
+        </div>
+        <div class="footer">
+          <p class="version">WBPriceScrap v.1.1</p>
+        </div>
+      </div>
+    </main>
+    <script type="module" src="./js/app.js"></script>
+    <script type="module" src="./js/parser.js"></script>
+    <script type="module" src="./js/tabs.js"></script>
+  </body>
+</html>

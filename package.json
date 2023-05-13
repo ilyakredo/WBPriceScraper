@@ -1,0 +1,32 @@
+{
+  "name": "wbPriceScrap",
+  "version": "1.1.0",
+  "description": "Scrapper for wildberries prices according to our books codes",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index",
+    "dev": "nodemon index"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.20.1",
+    "download": "^8.0.0",
+    "excel4node": "^1.8.0",
+    "express": "^4.18.2",
+    "firebase": "^9.14.0",
+    "fs-extra": "^11.1.0",
+    "jsdom": "^20.0.3",
+    "json2xls": "^0.1.2",
+    "node-fetch": "^3.3.0",
+    "nodemon": "^2.0.20",
+    "puppeteer": "^19.4.0",
+    "puppeteer-extra": "^3.3.4",
+    "puppeteer-extra-plugin-recaptcha": "^3.6.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.1",
+    "sharp": "^0.31.2",
+    "user-agents": "^1.0.1223",
+    "uuid": "^9.0.0"
+  }
+}
