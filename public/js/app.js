@@ -4,6 +4,7 @@ const body = document.querySelector("body");
 const inputForm = document.querySelector(".input-form");
 const downloadFile = document.querySelector("#download-file");
 const inputData = document.querySelector("#dataInput");
+const inputDataSec = document.querySelector("#dataInputSec");
 const inputQttSpan = document.querySelector("#qttInWork");
 const deleteBtn = document.querySelector("#deleteData");
 const resBlock = document.querySelector(".parser-result-block");
@@ -19,6 +20,21 @@ function splitStrInput(str) {
 }
 
 inputData.addEventListener("change", (event) => {
+  if (regExp.test(event.target.value)) {
+    loadDataBtn.setAttribute("disabled", "disabled");
+    loadDataBtn.classList.add("red-btn");
+    inputData.classList.add("red-border");
+    inputQttSpan.textContent = 0;
+  } else {
+    loadDataBtn.removeAttribute("disabled");
+    loadDataBtn.classList.remove("red-btn");
+    inputData.classList.remove("red-border");
+    const inputQtt = splitStrInput(event.target.value);
+    inputQttSpan.textContent = inputQtt;
+  }
+});
+
+inputDataSec.addEventListener("change", (event) => {
   if (regExp.test(event.target.value)) {
     loadDataBtn.setAttribute("disabled", "disabled");
     loadDataBtn.classList.add("red-btn");
@@ -248,7 +264,6 @@ resBlock.addEventListener("click", (event) => {
   }
   if (event.target.classList[1] === "addAllBtn") {
     const id = event.target.classList[0].slice(3);
-    console.log(id);
     dataArr.forEach((elem, ind) => {
       if (elem.id === id) {
         filteredDataArr[ind].otherSellersOffers = elem.otherSellersOffers;

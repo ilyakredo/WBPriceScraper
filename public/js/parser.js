@@ -21,7 +21,8 @@ export function addItem(itemCounter, itemObject) {
   deleteItemDiv.classList.add("resultHeadingDeleteItem");
   itemNumDiv.innerHTML = `<p>${itemCounter}</p>`;
   titleDiv.innerHTML = `<p>${itemObject.ourItem.title}</p>`;
-  deleteItemDiv.innerHTML = `<button class="offerDeleteBtn" id=${itemObject.id}>УДАЛИТЬ КАРТОЧКУ</button>`;
+  deleteItemDiv.innerHTML = `<button class="offerDeleteBtn" 
+  id=${itemObject.id}>УДАЛИТЬ КАРТОЧКУ</button>`;
   headingDiv.appendChild(itemNumDiv);
   headingDiv.appendChild(titleDiv);
   headingDiv.appendChild(deleteItemDiv);
@@ -41,13 +42,28 @@ export function addItem(itemCounter, itemObject) {
   const ourCodePar = document.createElement("p");
   const ourPricePar = document.createElement("p");
   const ourSalePar = document.createElement("p");
-  ourCodePar.innerHTML = `<span class="tableItemDesc">Наш код WB: </span>${itemObject.ourItem.ourWBCode}`;
-  ourPricePar.innerHTML = `<span class="tableItemDesc">Наша цена: </span><span class="resultItemPrice">${itemObject.ourItem.price}</span>`;
-  ourSalePar.innerHTML = `<span class="tableItemDesc">Акция: </span>${itemObject.ourItem.sale}`;
+  ourCodePar.innerHTML = `<span class="tableItemDesc">Наш код WB: 
+  </span>${itemObject.ourItem.ourWBCode}`;
+  ourPricePar.innerHTML = `<span class="tableItemDesc">Наша цена: 
+  </span><span class="resultItemPrice">${itemObject.ourItem.price}</span>`;
+  ourSalePar.innerHTML = `<span class="tableItemDesc">Акция: 
+  </span>${itemObject.ourItem.sale}`;
   ourItemDiv.appendChild(ourImgWrapper);
   ourItemDiv.appendChild(ourCodePar);
   ourItemDiv.appendChild(ourPricePar);
   ourItemDiv.appendChild(ourSalePar);
+  if (itemObject.lab.price) {
+    const labPrice = document.createElement("p");
+    labPrice.innerHTML = `<span class="tableItemDesc">Цена Лаб: </span><a target="blank" 
+    href="${itemObject.lab.link}">${itemObject.lab.price}</a>`;
+    ourItemDiv.appendChild(labPrice);
+  }
+  if (itemObject.ozon.price) {
+    const ozPrice = document.createElement("p");
+    ozPrice.innerHTML = `<span class="tableItemDesc">Цена Озон: </span><a target="blank" 
+    href="${itemObject.ozon.link}">${itemObject.ozon.price}</a>`;
+    ourItemDiv.appendChild(ozPrice);
+  }
   const matchedOffersDiv = document.createElement("div");
   matchedOffersDiv.classList.add("matchedOffersWrapper");
   const matchedOffersHeading = document.createElement("h4");
@@ -62,14 +78,18 @@ export function addItem(itemCounter, itemObject) {
     matchedOfferItemWrapper.classList.add("matchedOfferItemWrapper");
     const matchedOfferItemImgWrapper = document.createElement("div");
     matchedOfferItemImgWrapper.classList.add("matchedOfferItemImgWrapper");
-    matchedOfferItemImgWrapper.innerHTML = `<img class="previewImg" src="${offerItem.image}" alt="Item image">`;
-    matchedOfferItemImgWrapper.innerHTML = `<img class="previewImg" src="${offerItem.image}" alt="Item image">`;
+    matchedOfferItemImgWrapper.innerHTML = `<img class="previewImg" 
+    src="${offerItem.image}" alt="Item image">`;
+    matchedOfferItemImgWrapper.innerHTML = `<img class="previewImg" 
+    src="${offerItem.image}" alt="Item image">`;
     const matchedOffersInfoWrapper = document.createElement("div");
     matchedOffersInfoWrapper.classList.add("matchedOffersInfoWrapper");
     const matchedOfferSeller = document.createElement("P");
-    matchedOfferSeller.innerHTML = `<span class="tableItemDesc">Продавец: </span>${offerItem.sellerName}`;
+    matchedOfferSeller.innerHTML = `<span class="tableItemDesc">Продавец: 
+    </span>${offerItem.sellerName}`;
     const matchedOfferPrice = document.createElement("p");
-    matchedOfferPrice.innerHTML = `<span class="tableItemDesc">Цена: </span><span class="resultItemPrice">${offerItem.price}</span>`;
+    matchedOfferPrice.innerHTML = `<span class="tableItemDesc">Цена: 
+    </span><span class="resultItemPrice">${offerItem.price}</span>`;
     const matchedOfferBtn = document.createElement("button");
     matchedOfferItemWrapper.appendChild(matchedOfferItemImgWrapper);
     matchedOffersInfoWrapper.appendChild(matchedOfferSeller);
@@ -107,7 +127,8 @@ export function addItem(itemCounter, itemObject) {
     otherOfferItemWrapper.classList.add("otherOfferItemWrapper");
     const otherOfferItemImgWrapper = document.createElement("div");
     otherOfferItemImgWrapper.classList.add("otherOfferItemImgWrapper");
-    otherOfferItemImgWrapper.innerHTML = `<img class="previewImg" src="${offerItem.image}" alt="Item image">`;
+    otherOfferItemImgWrapper.innerHTML = `<img class="previewImg" 
+    src="${offerItem.image}" alt="Item image">`;
     const otherOffersInfoWrapper = document.createElement("div");
     otherOffersInfoWrapper.classList.add("otherOffersInfoWrapper");
     const otherOfferTitle = document.createElement("div");
@@ -120,12 +141,16 @@ export function addItem(itemCounter, itemObject) {
         "..."
       )}</p></a>`;
     } else {
-      otherOfferTitle.innerHTML = `<a href=${offerItem.offerLink} target="blank"><p><span class="tableItemDesc">Название: </span>${offerItem.title}</p></a>`;
+      otherOfferTitle.innerHTML = `<a href=${offerItem.offerLink} 
+      target="blank"><p><span class="tableItemDesc">Название: 
+      </span>${offerItem.title}</p></a>`;
     }
     const otherOfferPrice = document.createElement("p");
-    otherOfferPrice.innerHTML = `<span class="tableItemDesc">Цена: </span><span class="resultItemPrice">${offerItem.price}</span>`;
+    otherOfferPrice.innerHTML = `<span class="tableItemDesc">Цена: 
+    </span><span class="resultItemPrice">${offerItem.price}</span>`;
     const otherOfferSale = document.createElement("p");
-    otherOfferSale.innerHTML = `<span class="tableItemDesc">Акция: </span>${offerItem.offerSale}`;
+    otherOfferSale.innerHTML = `<span class="tableItemDesc">Акция: 
+    </span>${offerItem.offerSale}`;
     const otherOfferBtn = document.createElement("button");
     otherOfferBtn.setAttribute("id", `${offerItem.id}`);
     otherOfferBtn.classList.add(`b-${itemObject.id}`);
@@ -152,7 +177,7 @@ export function removeResultInfo() {
   resultDiv.innerHTML = "";
 }
 
-loadDatabtn.addEventListener("click", (event) => {
+loadDatabtn.addEventListener("click", () => {
   const dataLoadDiv = document.createElement("div");
   dataLoadDiv.setAttribute("class", "data-load");
   dataLoadDiv.innerHTML =
@@ -184,6 +209,8 @@ loadDatabtn.addEventListener("click", (event) => {
             ourItem: elem.ourItem,
             matchedSellersOffers: elem.matchedSellersOffers,
             otherSellersOffers: [],
+            lab: elem.lab,
+            ozon: elem.ozon,
           });
         });
         removeResultInfo();

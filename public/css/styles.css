@@ -74,6 +74,17 @@ h1 {
   gap: 0.5%;
 }
 
+.inputDataWrapper {
+  display: flex;
+}
+
+.inputDataWrapper label {
+  display: flex;
+  align-items: center;
+  gap: 0.5vw;
+  width: 48%;
+}
+
 .input-block input {
   width: 83%;
   height: 2vw;
@@ -237,6 +248,7 @@ h1 {
   height: 2vw;
   top: 0;
   right: 10.5vw;
+  background-color: #ffaa00;
 }
 
 .innerHeadingWrapper button:hover {
@@ -272,6 +284,13 @@ h1 {
 
 .tableItemDesc {
   font-weight: 700;
+}
+
+.ourItemDiv a {
+  font-weight: 700;
+  text-decoration: none;
+  color: #1c00d0;
+  font-size: 1.1vw;
 }
 
 .resultItemPrice {

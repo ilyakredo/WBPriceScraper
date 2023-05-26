@@ -14,8 +14,15 @@
         <h1>-WBPriceScrap-</h1>
         <div class="input-block">
           <form method="post" class="input-form" action="/">
-            <div>
-              <input type="text" name="inputData" id="dataInput" />
+            <div class="inputDataWrapper">
+              <label
+                >КОДЫ WB:
+                <input type="text" name="inputData" id="dataInput" />
+              </label>
+              <label>
+                EAN:
+                <input type="text" name="inputDataSec" id="dataInputSec" />
+              </label>
               <button id="loadDataBtn" type="submit">ЗАГРУЗИТЬ ДАННЫЕ</button>
             </div>
             <div class="processHandleWrapper">
@@ -71,6 +78,5 @@
     </main>
     <script type="module" src="./js/app.js"></script>
     <script type="module" src="./js/parser.js"></script>
-    <script type="module" src="./js/tabs.js"></script>
   </body>
 </html>

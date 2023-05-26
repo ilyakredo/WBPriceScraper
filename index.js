@@ -10,6 +10,14 @@ import XLSX from "xlsx";
 import os from "os";
 import { v4 as uuidv4 } from "uuid";
 
+import { searchByTitle } from "./scrapers/wbTitleSearch.js";
+import { handleOzon } from "./scrapers/ozon.js";
+import { handleLab } from "./scrapers/labirint.js";
+import { filterOffers } from "./helpers/filterOffers.js";
+import { splitStrInput } from "./helpers/splitInputString.js";
+import { prepareData } from "./helpers/prepareData.js";
+import { createSearchUrl } from "./helpers/createSearchUrl.js";
+
 puppeteer.use(StealthPlugin());
 puppeteer.use(
   RecaptchaPlugin({
@@ -22,8 +30,8 @@ puppeteer.use(
 );
 
 /////////
-const regExp = /[\s]{1,}[,]{1,}[\s]{1,}|[,]{1,}|[\s]{1,}/gm;
 let inputData;
+let inputDataEan;
 
 /////////////////////////////////  Сервер express
 
@@ -51,7 +59,7 @@ const jsonParser = express.json();
 
 app.post("/download_results", jsonParser, (req, res) => {
   const downloadData = req.body;
-  const workSheet = XLSX.utils.json_to_sheet(handleData(downloadData));
+  const workSheet = XLSX.utils.json_to_sheet(prepareData(downloadData));
   const workBook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workBook, workSheet, "Sheet1");
   const excelBuffer = XLSX.write(workBook, {
@@ -82,11 +90,12 @@ app.post("/", (req, res) => {
     res.redirect("/");
   } else {
     inputData = req.body.inputData;
+    inputDataEan = req.body.inputDataSec;
     const handleOptions = {
       isProcessOutOfStock: req.body.processOutOfStock,
       isProcessOnlyCardData: req.body.processOnlyCardData,
     };
-    const parseRes = start(inputData, handleOptions);
+    const parseRes = start(inputData, inputDataEan, handleOptions);
     parseRes
       .then((resolve) => {
         if (resolve) {
@@ -106,71 +115,6 @@ app.listen(PORT, () => {
   console.log("Server started on port: 8000 ...");
 });
 ////////////////////////////////////////////////////  Конец сервера
-
-// Функция приобразования информации перед скачиванием файла
-function handleData(inputData) {
-  const data = [];
-  inputData.forEach((dataElement) => {
-    const convertedObj = {
-      Код: dataElement.ourItem.ourWBCode,
-      Название: dataElement.ourItem.title,
-      Наша_цена: dataElement.ourItem.price,
-      Акция: dataElement.ourItem.sale,
-    };
-    const offersPricesArr = [];
-    for (let offer of dataElement.matchedSellersOffers) {
-      offersPricesArr.push({
-        price: offer.price,
-        desc: `Продавец: ${offer.sellerName}`,
-      });
-    }
-    for (let offer of dataElement.otherSellersOffers) {
-      offersPricesArr.push({
-        price: offer.price,
-        desc: offer.offerSale ? `Акция: ${offer.offerSale}` : "",
-      });
-    }
-    offersPricesArr.sort((offer, nextOffer) => offer.price - nextOffer.price);
-    if (dataElement.ourItem.price !== "Товар продан" && offersPricesArr[0]) {
-      const percentPriceDiff = Math.round(
-        (dataElement.ourItem.price / offersPricesArr[0].price) * 100 - 100,
-        -1
-      );
-      convertedObj["Разн_цены_%"] = percentPriceDiff;
-    } else {
-      convertedObj["Разн_цены_%"] = "";
-    }
-    offersPricesArr.forEach((offerObj, ind) => {
-      convertedObj[`_${ind + ind + 1}`] = offerObj.price;
-      convertedObj[`_${ind + ind + 2}`] = offerObj.desc;
-    });
-    data.push(convertedObj);
-  });
-  return data;
-}
-
-// Функция преобразует входную строку в массив
-function splitStrInput(str) {
-  const resultArr = str.trim().split(regExp);
-  for (let i = 0; i < resultArr.length; i++) {
-    if (resultArr[i] === "") {
-      resultArr.splice(i, 1);
-      i--;
-    }
-  }
-  return resultArr;
-}
-
-// функция приобразует входную инфо в массив готовых url
-function makeSearchUrl(data) {
-  const resArr = [];
-  data.forEach((searchElem) => {
-    resArr.push(
-      `https://www.wildberries.ru/catalog/${searchElem}/detail.aspx?targetUrl=SP",`
-    );
-  });
-  return resArr;
-}
 
 async function writeJsonFile(fileName, data, delItemInfo) {
   const prevData = fs.readFileSync(`public/${fileName}.json`, "utf8");
@@ -198,21 +142,6 @@ async function writeJsonFile(fileName, data, delItemInfo) {
           }
         }
       });
-      let lowerPriceFlag = false;
-      tmpData.some((item) => {
-        item.matchedSellersOffers.forEach((offer) => {
-          if (offer.price < item.ourItem.price) {
-            lowerPriceFlag = true;
-          }
-        });
-        item.otherSellersOffers.forEach((offer) => {
-          if (offer.price < item.ourItem.price) {
-            lowerPriceFlag = true;
-          }
-        });
-        item.priceAlert = lowerPriceFlag;
-        lowerPriceFlag = false;
-      });
       resultData = tmpData;
     } else {
       const tmpData = JSON.parse(prevData);
@@ -224,161 +153,37 @@ async function writeJsonFile(fileName, data, delItemInfo) {
   }
 }
 
-const convertStrToArr = (str) => {
-  const wordsArr = str.toLowerCase().split(" ");
-  return wordsArr.map((word) => {
-    return word
-      .replace(".", "")
-      .replace("/", "")
-      .replace(";", "")
-      .replace(":", "")
-      .replace(",", "")
-      .replace('"', "")
-      .replace("'", "");
-  });
-};
-
-// Функция сравнения названия книги (Для определения подходящий ли товар)
-const filterOffers = (offersArr, itemTitle, itemCode) => {
-  const itemTitleWordsAr = convertStrToArr(itemTitle);
-  const titleWordsLength = itemTitleWordsAr.length;
-
-  const filteredArr = offersArr.filter((offer) => {
-    let matchCounter = 0;
-    const offerTitleWordsArr = convertStrToArr(offer.title);
-    for (let word of offerTitleWordsArr) {
-      if (itemTitleWordsAr.includes(word)) {
-        matchCounter++;
-      }
-    }
-    if (titleWordsLength <= 2) {
-      if (matchCounter >= 1) {
-        return true;
-      }
-    } else if (titleWordsLength > 2) {
-      if (matchCounter > 1) {
-        return true;
-      }
-    } else {
-      return false;
-    }
-  });
-  const filteredSortedArr = filteredArr.sort(
-    (a, b) => Number(a.price) - Number(b.price)
-  );
-  return filteredSortedArr;
-};
-
-// Функция поиска цен по названию полученного из нашей карточки.
-const searchByTitle = async (itemPriceObj, page) => {
-  const searchByTitleUrl = `https://www.wildberries.ru/catalog/0/search.aspx?search=${itemPriceObj.ourItem.searchQuery}`;
-  try {
-    await page.goto(searchByTitleUrl, { timeout: 10000 });
-  } catch (err) {
-    console.log("Can't load Wildberries page");
-  }
-  try {
-    await page.waitForSelector("h1.not-found-search__title", {
-      timeout: 1500,
-    });
-  } catch (err) {}
-  const notFoundSearchItems = await page.$("h1.not-found-search__title");
-  if (notFoundSearchItems) {
-    return [];
-  }
-  //  Делаем одну прокрутку в самый конец страницы чтобы подгрузились дополнительные товары
-  const pervHeight = await page.evaluate(() => {
-    return document.body.scrollHeight;
-  });
-  await page.evaluate((pageHeight) => {
-    window.scrollTo(0, pageHeight);
-  }, pervHeight);
-  await new Promise((resolve) => setTimeout(resolve, 2000)); // Задаём ожидагние для загрузки всех элементов
-  /////////
-  try {
-    await page.waitForSelector("div.catalog-page__content", {
-      timeout: 5000,
-    });
-  } catch (err) {
-    console.log("Error search content");
-  }
-  const searchItemsWrapper = await page.$("div.catalog-page__content");
-  // Скраппинг наших данных с нашой карточки товара
-  let otherOffersArr = await page.evaluate(async (dataBlock) => {
-    const offersArr = [];
-    const offersNodes = dataBlock.querySelectorAll("article.product-card");
-    offersNodes.forEach((offerNode) => {
-      const bookObj = {};
-      const productLink = offerNode
-        .querySelector("div.product-card__wrapper > a")
-        .getAttribute("href");
-      bookObj.offerLink = productLink;
-      if (offerNode.querySelector(".product-card__tip--action")) {
-        bookObj.offerSale = offerNode.querySelector(
-          ".product-card__tip--action"
-        ).textContent;
-      } else {
-        bookObj.offerSale = "";
-      }
-      const offerTitle = offerNode.querySelector(
-        "span.product-card__name"
-      ).textContent;
-      bookObj.title = offerTitle.replace("/", "").trim();
-      const price = offerNode.querySelector(".price__lower-price").textContent;
-      bookObj.price = Number(price.replace("₽", "").replace(/\s+/g, "").trim());
-      bookObj.image = offerNode
-        .querySelector("div.product-card__img-wrap > img")
-        .getAttribute("src");
-      offersArr.push(bookObj);
-    });
-    return offersArr;
-  }, searchItemsWrapper);
-  //////////////
-  otherOffersArr.forEach((offer) => {
-    offer.id = uuidv4();
-  });
-  // Удаляем повтор. эл-ты из предложений в карточке товара и наш товар
-  otherOffersArr = otherOffersArr.filter((offer) => {
-    let isRepeat = false;
-    for (let matchOffer of itemPriceObj.matchedSellersOffers) {
-      if (offer.image.includes(matchOffer.wbCode)) {
-        isRepeat = true;
-      }
-    }
-    if (offer.image.includes(itemPriceObj.ourItem.ourWBCode)) {
-      isRepeat = true;
-    }
-    return !isRepeat;
-  });
-  return otherOffersArr;
-};
-
 // ОСНОВНАЯ ФУНКЦИЯ
 
-async function start(inputUrl, handleOptions) {
-  const inputDataArr = splitStrInput(inputUrl);
+async function start(inputData, inputDataEan, handleOptions) {
+  const inputDataArr = splitStrInput(inputData);
+  const inputDataEanArr = splitStrInput(inputDataEan);
   if (inputDataArr.length === 0) {
     return new Promise((reject) => {
       reject("Ошибка обработки!");
     });
   }
   let totalInputDataAmount = inputDataArr.length;
-  const searchUrls = makeSearchUrl(inputDataArr);
+  const searchUrls = createSearchUrl(inputDataArr, inputDataEanArr);
   const resultArr = [];
   const userAgent = new UserAgent();
   try {
     const browser = await puppeteer.launch({
       headless: false,
-      args: ["--disable-dev-shm-usage"],
+      args: ["--disable-dev-shm-usage", "--window-size=1920,1080"],
       executablePath: executablePath(),
+      defaultViewport: {
+        width: 1920,
+        height: 1080,
+      },
     });
     const page = await browser.newPage();
     page.setDefaultNavigationTimeout(15000);
     page.setDefaultTimeout(15000);
-    await page.setViewport({
-      width: 1920,
-      height: 1080,
-    });
+    // await page.setViewport({
+    //   width: 1920,
+    //   height: 1080,
+    // });
     await page.setUserAgent(
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36"
     );
@@ -405,11 +210,13 @@ async function start(inputUrl, handleOptions) {
           },
           matchedSellersOffers: [],
           otherSellersOffers: [],
+          lab: "",
+          ozon: "",
         };
         searchCounter++;
         await page.setUserAgent(userAgent.random().toString());
         try {
-          await page.goto(searchUrl, { timeout: 15000 });
+          await page.goto(searchUrl.wb, { timeout: 15000 });
         } catch (err) {
           resultArr.push(itemPriceObj);
           console.log("Can't load Wildberries page");
@@ -474,7 +281,6 @@ async function start(inputUrl, handleOptions) {
             ) {
               continue;
             }
-
             itemPriceObj.ourItem = { ...ourBookData };
             // Скраппинг цен и информации других продовцов в нашей карточке товара(если есть)
             try {
@@ -543,24 +349,21 @@ async function start(inputUrl, handleOptions) {
               console.log("Error WB parsing - 2 :", err);
             }
           }
-          let lowerPriceFlag = false;
-          itemPriceObj.matchedSellersOffers.some((item) => {
-            if (item.price < itemPriceObj.ourItem.price) {
-              lowerPriceFlag = true;
-              itemPriceObj.priceAlert = true;
-              return true;
-            }
-          });
-          if (!lowerPriceFlag) {
-            itemPriceObj.otherSellersOffers.some((item) => {
-              if (item.price < itemPriceObj.ourItem.price) {
-                itemPriceObj.priceAlert = true;
-                return true;
-              }
-            });
+          try {
+            itemPriceObj.lab = await handleLab(searchUrl, page);
+          } catch (err) {
+            console.log("Error scraping Labirint page");
+          }
+          try {
+            itemPriceObj.ozon = await handleOzon(
+              searchUrl,
+              page,
+              itemPriceObj.ourItem.title
+            );
+          } catch (err) {
+            console.log("Error scraping Ozon page");
           }
           ////////////////////////////////////////
-
           resultArr.push(itemPriceObj);
           console.log("Item found:  ", itemPriceObj.ourItem.title);
           console.log("Our price:  ", itemPriceObj.ourItem.price);
@@ -578,7 +381,7 @@ async function start(inputUrl, handleOptions) {
         console.log("Error WB parsing - 3 :", err);
       }
     }
-    // await browser.close();
+    await browser.close();
     const endTime = new Date();
     const parsTime = endTime - startTime;
     console.log("---------PARSING FINISHED---------");
