@@ -29,6 +29,23 @@ button:hover {
   border: 1px solid #006f74;
 }
 
+button.offerAddBtn {
+  padding: 0.2vw;
+  align-self: flex-end;
+  justify-self: flex-end;
+  margin-right: 0.5vw;
+  width: 70%;
+  /* width: 70%; */
+}
+
+button.offerAddBtn:hover {
+  border: none;
+}
+
+button.offerAddBtn.selectedBtn {
+  background-color: #2fff00;
+}
+
 .content-wrapper {
   width: 92vw;
   background-color: #fef2d7;
@@ -189,8 +206,45 @@ h1 {
   font-weight: 700;
 }
 
+.innerHeadingWrapper {
+  box-sizing: border-box;
+  position: relative;
+  width: 100%;
+  display: flex;
+  padding: 0.5vw 0;
+  margin-bottom: 0.5vw;
+  background-color: #fef2d7;
+}
+
+.innerHeadingWrapper h4 {
+  width: 100%;
+  text-align: center;
+  
+}
+.innerHeadingWrapper button {
+  position: absolute;
+  box-sizing: border-box;
+  width: 10vw;
+  height: 2vw;
+  top: 0;
+  right: 0;
+}
+
+.innerHeadingWrapper .noMatchedItems {
+  position: absolute;
+  box-sizing: border-box;
+  width: 10vw;
+  height: 2vw;
+  top: 0;
+  right: 10.5vw;
+}
+
+.innerHeadingWrapper button:hover {
+  border: none;
+}
+
 .resultHeadingDeleteItem {
-  width: 12%;
+  width: 14%;
   background-color: #006f74;
 }
 
@@ -333,6 +387,7 @@ h1 {
   width: 60%;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .otherOffersInfoWrapper p {
@@ -383,6 +438,71 @@ h1 {
 
 .previewImg:hover {
   transform: scale(2);
+}
+
+.downloadMsgWrapper {
+  width: 100vw;
+  height: 100vh;
+  position: fixed;
+  background-color: rgba(0, 0, 0, 0.6);
+  /* background-color: #faf7ef; */
+  /* border: 20px solid rgba(0, 0, 0, 0.05); */
+  /* top: 15vw; */
+  /* left: calc(50% - 25vw); */
+  top: 0;
+  left: 0;
+}
+
+.downloadMsg {
+  width: 60vw;
+  height: 30vw;
+  background-color: #fef2d7;
+  position: absolute;
+  padding: 2vw 2vw 2vw 2vw;
+  top: 5vw;
+  left: calc(50% - 30vw);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.downloadMsg a {
+  text-decoration: none;
+  color: #000000;
+  margin-right: 0.5vw;
+  font-weight: 700;
+}
+
+.msgHeadingWrapper {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding-bottom: 2vw;
+}
+
+.msgHeadingWrapper h3 {
+  color: #f24e4a;
+  font-size: 1vw;
+}
+
+.closeMsgBtn {
+  padding: 0.2vw 0.5vw;
+  align-self: flex-end;
+}
+
+.closeMsgBtn:hover {
+  border: none;
+}
+
+.msgDownloadBtn {
+  padding: 0.2vw 0.5vw;
+  width: 20%;
+  align-self: center;
+}
+
+.msgDownloadBtn:hover {
+  border: none;
 }
 
 /* Нижний блок */

@@ -1,18 +1,12 @@
 import express from "express";
 import puppeteer from "puppeteer-extra";
 import { executablePath } from "puppeteer";
-import path, { resolve } from "path";
+import path from "path";
 import * as fs from "fs";
-import { initializeApp } from "firebase/app";
-import { getStorage } from "firebase/storage";
-
 import UserAgent from "user-agents";
-import * as fsExtra from "fs-extra";
-import bodyParser from "body-parser";
-
 import RecaptchaPlugin from "puppeteer-extra-plugin-recaptcha";
 import StealthPlugin from "puppeteer-extra-plugin-stealth";
-import json2xls from "json2xls";
+import XLSX from "xlsx";
 import os from "os";
 import { v4 as uuidv4 } from "uuid";
 
@@ -39,7 +33,6 @@ const app = express();
 app.use(express.static("public"));
 app.use(express.urlencoded({ extended: false, limit: "50mb" }));
 app.use(express.json({ limit: "50mb" }));
-// app.use(express.urlencoded({limit: '50mb'}));
 
 app.get("/", (req, res) => {
   res.sendFile(__dirname + "/index.html");
@@ -57,22 +50,31 @@ app.get("/data-load-finish", (req, res) => {
 const jsonParser = express.json();
 
 app.post("/download_results", jsonParser, (req, res) => {
-  const infoArr = req.body;
-  const excel = json2xls(handleData(infoArr));
+  const downloadData = req.body;
+  const workSheet = XLSX.utils.json_to_sheet(handleData(downloadData));
+  const workBook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workBook, workSheet, "Sheet1");
+  const excelBuffer = XLSX.write(workBook, {
+    bookType: "xlsx",
+    type: "buffer",
+  });
   const date = new Date();
   let fileName = `wbPrices-${date.toLocaleString().slice(0, -3)}`;
   fileName = fileName.replace(", ", " ").replaceAll(":", "-");
   // Поиск папки dowloads в windows
   const homeDir = os.homedir();
   const downloadDir = `${homeDir}/Downloads`;
-  fs.writeFileSync(`${downloadDir}/${fileName}.xlsx`, excel, "binary");
+  fs.writeFileSync(`${downloadDir}/${fileName}.xlsx`, excelBuffer);
   res.send(JSON.stringify({ message: "ФАЙЛ УСПЕШНО СОХРАНЁН В ЗАГРУЗКИ" }));
 });
 
 app.post("/delete_item", jsonParser, (req, res) => {
   const delBookInfo = req.body;
+  const dataArr = delBookInfo.dataArr;
   writeJsonFile("booksParse", "", delBookInfo.delId);
-  res.send(JSON.stringify({ message: "ОБЪЕКТ УСПЕШНО УДАЛЁН" }));
+  res.send(
+    JSON.stringify({ message: "ОБЪЕКТ УСПЕШНО УДАЛЁН", updatedData: dataArr })
+  );
 });
 
 app.post("/", (req, res) => {
@@ -86,7 +88,7 @@ app.post("/", (req, res) => {
     };
     const parseRes = start(inputData, handleOptions);
     parseRes
-      .then((resolve, reject) => {
+      .then((resolve) => {
         if (resolve) {
           res.sendFile(__dirname + "/public/data-load-finish.html");
         }
@@ -106,60 +108,44 @@ app.listen(PORT, () => {
 ////////////////////////////////////////////////////  Конец сервера
 
 // Функция приобразования информации перед скачиванием файла
-function handleData(arr) {
+function handleData(inputData) {
   const data = [];
-  arr.forEach((elem) => {
-    const itemObj = {};
-    itemObj["Код"] = elem.ourItem.ourWBCode;
-    itemObj["Название"] = elem.ourItem.title;
-    itemObj["Наша_цена"] = elem.ourItem.price;
-    itemObj["Акция"] = elem.ourItem.sale;
-
+  inputData.forEach((dataElement) => {
+    const convertedObj = {
+      Код: dataElement.ourItem.ourWBCode,
+      Название: dataElement.ourItem.title,
+      Наша_цена: dataElement.ourItem.price,
+      Акция: dataElement.ourItem.sale,
+    };
     const offersPricesArr = [];
-    for (let offer of elem.matchedSellersOffers) {
+    for (let offer of dataElement.matchedSellersOffers) {
       offersPricesArr.push({
         price: offer.price,
         desc: `Продавец: ${offer.sellerName}`,
       });
     }
-    for (let offer of elem.otherSellersOffers) {
-      if (offer.offerSale) {
-        offersPricesArr.push({
-          price: offer.price,
-          desc: `Акция: ${offer.offerSale}`,
-        });
-      } else {
-        offersPricesArr.push({ price: offer.price, desc: "" });
-      }
+    for (let offer of dataElement.otherSellersOffers) {
+      offersPricesArr.push({
+        price: offer.price,
+        desc: offer.offerSale ? `Акция: ${offer.offerSale}` : "",
+      });
     }
     offersPricesArr.sort((offer, nextOffer) => offer.price - nextOffer.price);
-    if (elem.ourItem.price !== "Товар продан" && offersPricesArr[0]) {
+    if (dataElement.ourItem.price !== "Товар продан" && offersPricesArr[0]) {
       const percentPriceDiff = Math.round(
-        (elem.ourItem.price / offersPricesArr[0].price) * 100 - 100,
+        (dataElement.ourItem.price / offersPricesArr[0].price) * 100 - 100,
         -1
       );
-      itemObj["Разн_цены_%"] = percentPriceDiff;
+      convertedObj["Разн_цены_%"] = percentPriceDiff;
     } else {
-      itemObj["Разн_цены_%"] = "";
+      convertedObj["Разн_цены_%"] = "";
     }
-
     offersPricesArr.forEach((offerObj, ind) => {
-      itemObj[`_${ind + ind + 1}`] = offerObj.price;
-      itemObj[`_${ind + ind + 2}`] = offerObj.desc;
+      convertedObj[`_${ind + ind + 1}`] = offerObj.price;
+      convertedObj[`_${ind + ind + 2}`] = offerObj.desc;
     });
-    data.push(itemObj);
+    data.push(convertedObj);
   });
-  // Проверяем и добавляем поля первому элементу чтобы корректно работал json2xls
-  let maxValuesQtt = 0;
-  data.forEach((elem) => {
-    if (Object.keys(elem).length > maxValuesQtt) {
-      maxValuesQtt = Object.keys(elem).length;
-    }
-  });
-  const firstElemKeysLength = Object.keys(data[0]).length;
-  for (let i = firstElemKeysLength - 3; i <= maxValuesQtt - 4; i++) {
-    data[0][`_${i}`] = "";
-  }
   return data;
 }
 
@@ -193,7 +179,6 @@ async function writeJsonFile(fileName, data, delItemInfo) {
     if (delItemInfo) {
       const tmpData = JSON.parse(prevData);
       tmpData.some((item, ind) => {
-        // let deleteInd = item.findIndex((item) => item.id === delItemInfo);
         if (item.id === delItemInfo) {
           tmpData.splice(ind, 1);
           return true;
@@ -212,6 +197,21 @@ async function writeJsonFile(fileName, data, delItemInfo) {
             }
           }
         }
+      });
+      let lowerPriceFlag = false;
+      tmpData.some((item) => {
+        item.matchedSellersOffers.forEach((offer) => {
+          if (offer.price < item.ourItem.price) {
+            lowerPriceFlag = true;
+          }
+        });
+        item.otherSellersOffers.forEach((offer) => {
+          if (offer.price < item.ourItem.price) {
+            lowerPriceFlag = true;
+          }
+        });
+        item.priceAlert = lowerPriceFlag;
+        lowerPriceFlag = false;
       });
       resultData = tmpData;
     } else {
@@ -373,8 +373,8 @@ async function start(inputUrl, handleOptions) {
       executablePath: executablePath(),
     });
     const page = await browser.newPage();
-    page.setDefaultNavigationTimeout(40000);
-    page.setDefaultTimeout(40000);
+    page.setDefaultNavigationTimeout(15000);
+    page.setDefaultTimeout(15000);
     await page.setViewport({
       width: 1920,
       height: 1080,
@@ -409,7 +409,7 @@ async function start(inputUrl, handleOptions) {
         searchCounter++;
         await page.setUserAgent(userAgent.random().toString());
         try {
-          await page.goto(searchUrl, { timeout: 20000 });
+          await page.goto(searchUrl, { timeout: 15000 });
         } catch (err) {
           resultArr.push(itemPriceObj);
           console.log("Can't load Wildberries page");
@@ -425,7 +425,7 @@ async function start(inputUrl, handleOptions) {
         } else {
           try {
             await page.waitForSelector(".product-page__grid", {
-              timeout: 5000,
+              timeout: 3000,
             });
             const bookDataWrapper = await page.$(".product-page__grid");
             // Скраппинг наших данных с нашой карточки товара
@@ -474,11 +474,12 @@ async function start(inputUrl, handleOptions) {
             ) {
               continue;
             }
+
             itemPriceObj.ourItem = { ...ourBookData };
             // Скраппинг цен и информации других продовцов в нашей карточке товара(если есть)
             try {
               await page.waitForSelector("div.other-offers__container", {
-                timeout: 4000,
+                timeout: 3000,
               });
             } catch (err) {}
             const otherSellersPricesBlock = await page.$(
@@ -577,7 +578,7 @@ async function start(inputUrl, handleOptions) {
         console.log("Error WB parsing - 3 :", err);
       }
     }
-    await browser.close();
+    // await browser.close();
     const endTime = new Date();
     const parsTime = endTime - startTime;
     console.log("---------PARSING FINISHED---------");

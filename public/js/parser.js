@@ -1,18 +1,16 @@
-const regExpEan = /[,:;]{1,1}/gm;
-
 const loadDatabtn = document.querySelector("#loadData");
 const resultDiv = document.querySelector(".parser-result");
-const appBlock = document.querySelector(".app-block");
 const downloadBtn = document.querySelector(".download");
 const downloadLink = document.querySelector(".dowload-link");
 const body = document.querySelector("body");
 
 export let dataArr = [];
-let notFoundCount;
+export let filteredDataArr = [];
 
 export function addItem(itemCounter, itemObject) {
   const itemWrapper = document.createElement("div");
   itemWrapper.classList.add("resultItemWrapper");
+  itemWrapper.id = itemObject.id + "-1";
   const headingDiv = document.createElement("div");
   headingDiv.classList.add("resultHeading");
   const itemNumDiv = document.createElement("div");
@@ -23,7 +21,7 @@ export function addItem(itemCounter, itemObject) {
   deleteItemDiv.classList.add("resultHeadingDeleteItem");
   itemNumDiv.innerHTML = `<p>${itemCounter}</p>`;
   titleDiv.innerHTML = `<p>${itemObject.ourItem.title}</p>`;
-  deleteItemDiv.innerHTML = `<button class="offerDeleteBtn" id=${itemObject.id}>Удалить карточку</button>`;
+  deleteItemDiv.innerHTML = `<button class="offerDeleteBtn" id=${itemObject.id}>УДАЛИТЬ КАРТОЧКУ</button>`;
   headingDiv.appendChild(itemNumDiv);
   headingDiv.appendChild(titleDiv);
   headingDiv.appendChild(deleteItemDiv);
@@ -46,12 +44,6 @@ export function addItem(itemCounter, itemObject) {
   ourCodePar.innerHTML = `<span class="tableItemDesc">Наш код WB: </span>${itemObject.ourItem.ourWBCode}`;
   ourPricePar.innerHTML = `<span class="tableItemDesc">Наша цена: </span><span class="resultItemPrice">${itemObject.ourItem.price}</span>`;
   ourSalePar.innerHTML = `<span class="tableItemDesc">Акция: </span>${itemObject.ourItem.sale}`;
-  if (itemObject.priceAlert) {
-    const lowerPriceAlert = document.createElement("div");
-    lowerPriceAlert.classList.add("lowerPriceAlert");
-    lowerPriceAlert.innerHTML = "<p>Существует цена ниже!</p>";
-    ourItemDiv.appendChild(lowerPriceAlert);
-  }
   ourItemDiv.appendChild(ourImgWrapper);
   ourItemDiv.appendChild(ourCodePar);
   ourItemDiv.appendChild(ourPricePar);
@@ -79,13 +71,9 @@ export function addItem(itemCounter, itemObject) {
     const matchedOfferPrice = document.createElement("p");
     matchedOfferPrice.innerHTML = `<span class="tableItemDesc">Цена: </span><span class="resultItemPrice">${offerItem.price}</span>`;
     const matchedOfferBtn = document.createElement("button");
-    matchedOfferBtn.classList.add("offerDeleteBtn");
-    matchedOfferBtn.setAttribute("id", `${offerItem.id}`);
-    matchedOfferBtn.textContent = "УДАЛИТЬ";
     matchedOfferItemWrapper.appendChild(matchedOfferItemImgWrapper);
     matchedOffersInfoWrapper.appendChild(matchedOfferSeller);
     matchedOffersInfoWrapper.appendChild(matchedOfferPrice);
-    matchedOffersInfoWrapper.appendChild(matchedOfferBtn);
     matchedOfferItemWrapper.appendChild(matchedOffersInfoWrapper);
     matchOfferInnerWrapper.appendChild(matchedOfferItemWrapper);
   });
@@ -94,10 +82,24 @@ export function addItem(itemCounter, itemObject) {
 
   const otherOffersDiv = document.createElement("div");
   otherOffersDiv.classList.add("otherOffersWrapper");
+  const headingWrapper = document.createElement("div");
+  headingWrapper.classList.add("innerHeadingWrapper");
   const otherOffersHeading = document.createElement("h4");
-  otherOffersHeading.classList.add("matchedOffersHead");
   otherOffersHeading.textContent = "Предложения других продавцов";
-  otherOffersDiv.appendChild(otherOffersHeading);
+  headingWrapper.appendChild(otherOffersHeading);
+  if (itemObject.otherSellersOffers.length > 0) {
+    const addAllBtn = document.createElement("button");
+    addAllBtn.innerHTML = "ДОБАВИТЬ ВСЕ";
+    addAllBtn.classList.add(`al-${itemObject.id}`);
+    addAllBtn.classList.add("addAllBtn");
+    const noItemsBtn = document.createElement("button");
+    noItemsBtn.innerHTML = "НЕТ ПОДХОДЯЩИХ";
+    noItemsBtn.classList.add(`nm-${itemObject.id}`);
+    noItemsBtn.classList.add("noMatchedItems");
+    headingWrapper.appendChild(noItemsBtn);
+    headingWrapper.appendChild(addAllBtn);
+  }
+  otherOffersDiv.appendChild(headingWrapper);
   const otherOfferInnerWrapper = document.createElement("div");
   otherOfferInnerWrapper.classList.add("otherOfferInnerWrapper");
   itemObject.otherSellersOffers.forEach((offerItem) => {
@@ -126,8 +128,9 @@ export function addItem(itemCounter, itemObject) {
     otherOfferSale.innerHTML = `<span class="tableItemDesc">Акция: </span>${offerItem.offerSale}`;
     const otherOfferBtn = document.createElement("button");
     otherOfferBtn.setAttribute("id", `${offerItem.id}`);
-    otherOfferBtn.classList.add("offerDeleteBtn");
-    otherOfferBtn.textContent = "УДАЛИТЬ";
+    otherOfferBtn.classList.add(`b-${itemObject.id}`);
+    otherOfferBtn.classList.add("offerAddBtn");
+    otherOfferBtn.textContent = "ДОБАВИТЬ";
     otherOfferItemWrapper.appendChild(otherOfferItemImgWrapper);
     otherOffersInfoWrapper.appendChild(otherOfferTitle);
     otherOffersInfoWrapper.appendChild(otherOfferPrice);
@@ -138,13 +141,10 @@ export function addItem(itemCounter, itemObject) {
   });
   otherOffersDiv.appendChild(otherOfferInnerWrapper);
   offersDiv.appendChild(otherOffersDiv);
-
   bodyDiv.appendChild(ourItemDiv);
   bodyDiv.appendChild(offersDiv);
-
   itemWrapper.appendChild(headingDiv);
   itemWrapper.appendChild(bodyDiv);
-
   resultDiv.appendChild(itemWrapper);
 }
 
@@ -176,10 +176,17 @@ loadDatabtn.addEventListener("click", (event) => {
         dataLoadDiv.remove();
       }
       if (data) {
+        filteredDataArr = [];
         dataArr = [...data];
+        dataArr.forEach((elem) => {
+          filteredDataArr.push({
+            id: elem.id,
+            ourItem: elem.ourItem,
+            matchedSellersOffers: elem.matchedSellersOffers,
+            otherSellersOffers: [],
+          });
+        });
         removeResultInfo();
-        // createTableHeading();
-
         let itemCounter = 0;
         for (let priceData of data) {
           itemCounter++;

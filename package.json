@@ -1,6 +1,6 @@
 {
   "name": "wbPriceScrap",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Scrapper for wildberries prices according to our books codes",
   "main": "index.js",
   "type": "module",
@@ -27,6 +27,7 @@
     "puppeteer-extra-plugin-stealth": "^2.11.1",
     "sharp": "^0.31.2",
     "user-agents": "^1.0.1223",
-    "uuid": "^9.0.0"
+    "uuid": "^9.0.0",
+    "xlsx": "^0.18.5"
   }
 }
