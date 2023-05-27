@@ -32,14 +32,17 @@ export const handleOzon = async (searchUrl, page, itemTitle) => {
       )[0].children;
       const nodes = [...itemsNodes];
       for (let node of nodes) {
-        const link =
-          "https://www.ozon.ru" + node.querySelector("a").getAttribute("href");
-        let price = node.querySelector(
-          "div > div:first-child > span > span:first-child"
-        ).textContent;
-        price = Number(price.replace("₽", "").replace(/\s+/g, "").trim());
-        const title = node.querySelector("div > a > span > span").textContent;
-        offersArr.push({ link, price, title });
+        if (node.innerHTML) {
+          const link =
+            "https://www.ozon.ru" +
+            node.querySelector("a").getAttribute("href");
+          let price = node.querySelector(
+            "div > div:first-child > span > span:first-child"
+          ).textContent;
+          price = Number(price.replace("₽", "").replace(/\s+/g, "").trim());
+          const title = node.querySelector("div > a > span > span").textContent;
+          offersArr.push({ link, price, title });
+        }
       }
       return offersArr;
     }, searchResults);

@@ -24,15 +24,16 @@ export const handleLab = async (searchUrl, page) => {
       timeout: 3000,
     });
     const priceDataWrapper = await page.$("span.price-val");
-    const labPrice = await page.evaluate((priceWrapper) => {
+    let labPrice = await page.evaluate((priceWrapper) => {
       return priceWrapper.querySelector("span").textContent;
     }, priceDataWrapper);
-    if (labPrice === "Нет в продаже") {
+    console.log("--->", labPrice);
+    if (labPrice.trim() === "Нет в продаже") {
       labPrice = "";
     }
     return { price: labPrice, link: itemLink };
   } catch (err) {
-    console.log("Can't get Labirint price");
+    console.log("Can't get Labirint price:", err);
     return "";
   }
 };
