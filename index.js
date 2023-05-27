@@ -79,10 +79,10 @@ app.post("/download_results", jsonParser, (req, res) => {
 app.post("/delete_item", jsonParser, (req, res) => {
   const delBookInfo = req.body;
   const dataArr = delBookInfo.dataArr;
-  writeJsonFile("booksParse", "", delBookInfo.delId);
-  res.send(
-    JSON.stringify({ message: "ОБЪЕКТ УСПЕШНО УДАЛЁН", updatedData: dataArr })
-  );
+  const delId = delBookInfo.delId;
+  const updatedData = dataArr.filter((item) => item.id !== delId);
+  fs.writeFileSync(`public/booksParse.json`, JSON.stringify(updatedData));
+  res.send(JSON.stringify({ status: "ok", updatedData: updatedData }));
 });
 
 app.post("/", (req, res) => {
@@ -250,8 +250,16 @@ async function start(inputData, inputDataEan, handleOptions) {
               bookTitle && bookPublisher
                 ? (bookObj.searchQuery = `${bookPublisher.trim()} / ${bookTitle.trim()}`)
                 : (bookObj.searchQuery = "");
+
+              // Добавление нашего кода товара
               bookObj.ourWBCode =
                 dataBlock.querySelector("#productNmId").textContent;
+              if (bookObj.ourWBCode) {
+                bookObj.link = `https://www.wildberries.ru/catalog/${bookObj.ourWBCode}/detail.aspx`;
+              } else {
+                bookObj.link = "";
+              }
+              // Добавление цены
               const soldOut = dataBlock.querySelector("p.sold-out-product");
               if (soldOut) {
                 bookObj.price = "Товар продан";
@@ -264,6 +272,8 @@ async function start(inputData, inputDataEan, handleOptions) {
                 );
                 bookObj.price = resultPrice;
               }
+
+              // Добавление акции
               const sale = dataBlock.querySelector(
                 "div.product-page__spec-action"
               ).textContent;
@@ -272,6 +282,34 @@ async function start(inputData, inputDataEan, handleOptions) {
                 .querySelector(".zoom-image-container > img")
                 .getAttribute("src");
               imgUrl ? (bookObj.image = imgUrl) : (bookObj.image = "");
+
+              // Поиск параметров книги (вес, переплет, кол-во страниц)
+              const detailsSection = document.querySelector(
+                ".details-section__details--about"
+              );
+              const detailsArr = detailsSection.querySelectorAll(
+                ".product-params__row"
+              );
+              detailsArr.forEach((detail) => {
+                if (
+                  detail.querySelector("th").textContent.trim() ===
+                  "Количество страниц"
+                ) {
+                  bookObj.pages = detail.querySelector("td").textContent;
+                }
+                if (
+                  detail.querySelector("th").textContent.trim() === "Обложка"
+                ) {
+                  bookObj.cover = detail.querySelector("td").textContent;
+                }
+                if (
+                  detail.querySelector("th").textContent.trim() ===
+                  "Вес товара с упаковкой (г)"
+                ) {
+                  bookObj.weight = detail.querySelector("td").textContent;
+                }
+              });
+              //
               return bookObj;
             }, bookDataWrapper);
             //////////////

@@ -27,6 +27,9 @@ export const handleLab = async (searchUrl, page) => {
     const labPrice = await page.evaluate((priceWrapper) => {
       return priceWrapper.querySelector("span").textContent;
     }, priceDataWrapper);
+    if (labPrice === "Нет в продаже") {
+      labPrice = "";
+    }
     return { price: labPrice, link: itemLink };
   } catch (err) {
     console.log("Can't get Labirint price");

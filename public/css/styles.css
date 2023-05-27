@@ -217,6 +217,12 @@ h1 {
   font-weight: 700;
 }
 
+.resultHeadingTitle a {
+  text-decoration: none;
+  color: #ffffff;
+  font-weight: 700;
+}
+
 .innerHeadingWrapper {
   box-sizing: border-box;
   position: relative;
@@ -290,7 +296,7 @@ h1 {
   font-weight: 700;
   text-decoration: none;
   color: #1c00d0;
-  font-size: 1.1vw;
+  font-size: 0.9vw;
 }
 
 .resultItemPrice {
@@ -316,10 +322,24 @@ h1 {
   width: 90%;
 }
 
+.priceLabel {
+  font-weight: 700;
+}
+
+.priceLabel .priceInput {
+  padding: 0.1vw 0.5vw;
+  width:7vw;
+  border: 1px solid #006f74;
+  margin-left: 1vw;
+  font-size: 0.8vw;
+}
+
 .offersDiv {
   width: 100%;
   padding: 0 0 0 1vw;
 }
+
+
 
 .matchedOffersWrapper {
   width: 100%;

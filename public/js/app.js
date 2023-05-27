@@ -1,8 +1,16 @@
-import { dataArr, filteredDataArr, removeResultInfo } from "./parser.js";
+import {
+  dataObj,
+  filteredDataArr,
+  removeResultInfo,
+  addItem,
+  activeButtons,
+  newPriceList,
+} from "./parser.js";
 const loadDataBtn = document.querySelector("#loadDataBtn");
 const body = document.querySelector("body");
 const inputForm = document.querySelector(".input-form");
 const downloadFile = document.querySelector("#download-file");
+const inputDataWrapper = document.querySelector(".inputDataWrapper");
 const inputData = document.querySelector("#dataInput");
 const inputDataSec = document.querySelector("#dataInputSec");
 const inputQttSpan = document.querySelector("#qttInWork");
@@ -16,7 +24,11 @@ const regExp2 = /[\s]{1,}[,]{1,}[\s]{1,}|[,]{1,}|[\s]{1,}/gm;
 
 function splitStrInput(str) {
   const resultArr = str.trim().split(regExp2);
-  return resultArr.length;
+  if (!resultArr[0]) {
+    return 0;
+  } else {
+    return resultArr.length;
+  }
 }
 
 inputData.addEventListener("change", (event) => {
@@ -34,7 +46,23 @@ inputData.addEventListener("change", (event) => {
   }
 });
 
-inputDataSec.addEventListener("change", (event) => {
+inputDataWrapper.addEventListener("change", (event) => {
+  const codeInputLength = splitStrInput(inputData.value);
+  const eanInputLength = splitStrInput(inputDataSec.value);
+  if (codeInputLength !== eanInputLength) {
+    loadDataBtn.setAttribute("disabled", "disabled");
+    loadDataBtn.classList.add("red-btn");
+    inputData.classList.add("red-border");
+    inputDataSec.classList.add("red-border");
+  } else {
+    loadDataBtn.removeAttribute("disabled");
+    loadDataBtn.classList.remove("red-btn");
+    inputData.classList.remove("red-border");
+    inputDataSec.classList.remove("red-border");
+  }
+});
+
+inputData.addEventListener("change", (event) => {
   if (regExp.test(event.target.value)) {
     loadDataBtn.setAttribute("disabled", "disabled");
     loadDataBtn.classList.add("red-btn");
@@ -97,7 +125,7 @@ deleteBtn.addEventListener("click", (event) => {
 });
 
 downloadFile.addEventListener("click", () => {
-  if (dataArr.length === 0) {
+  if (dataObj.dataList.length === 0) {
     console.log("Nothing to download");
   } else {
     const notSelectedItemsArr = [];
@@ -123,7 +151,7 @@ downloadFile.addEventListener("click", () => {
     if (notSelectedItemsArr.length > 0) {
       let msgStr = "";
       notSelectedItemsArr.forEach((elem) => {
-        const item = dataArr.find((item) => item.id === elem);
+        const item = dataObj.dataList.find((item) => item.id === elem);
         msgStr += `<a href="#${item.id}-1">${item.ourItem.ourWBCode}</a> `;
       });
 
@@ -211,6 +239,19 @@ resBlock.addEventListener("click", (event) => {
     !event.target.classList[2]
   ) {
     const id = event.target.classList[0].slice(3);
+    filteredDataArr.forEach((elem) => {
+      if (id === elem.id) {
+        for (let offer of elem.otherSellersOffers) {
+          const id = offer.id;
+          const removeInd = activeButtons.indexOf(id);
+          activeButtons.splice(removeInd, 1);
+        }
+        elem.otherSellersOffers = [];
+      }
+    });
+    if (!activeButtons.includes(event.target.classList[0])) {
+      activeButtons.push(event.target.classList[0]);
+    }
     const buttons = document.querySelectorAll(`.b-${id}`);
     const addAllBtn = document.querySelector(`.al-${id}.addAllBtn`);
     addAllBtn.setAttribute("disabled", true);
@@ -241,8 +282,10 @@ resBlock.addEventListener("click", (event) => {
     event.target.classList[1] === "offerAddBtn" &&
     !event.target.classList[2]
   ) {
-    dataArr.forEach((elem, ind) => {
-      if (elem.id === event.target.classList[0]) {
+    activeButtons.push(event.target.id);
+    const id = event.target.classList[0].slice(2);
+    dataObj.dataList.forEach((elem, ind) => {
+      if (elem.id === id) {
         const offer = elem.otherSellersOffers.find(
           (offer) => offer.id === event.target.id
         );
@@ -252,8 +295,13 @@ resBlock.addEventListener("click", (event) => {
     event.target.innerHTML = "ВЫБРАН";
     event.target.classList.add("selectedBtn");
   } else if (event.target.classList[2] === "selectedBtn") {
+    const removeBtnIndex = activeButtons.findIndex(
+      (elem) => elem === event.target.id
+    );
+    activeButtons.splice(removeBtnIndex, 1);
+    const id = event.target.classList[0].slice(2);
     filteredDataArr.forEach((elem) => {
-      if (elem.id === event.target.classList[0]) {
+      if (elem.id === id) {
         elem.otherSellersOffers = elem.otherSellersOffers.filter(
           (offer) => offer.id !== event.target.id
         );
@@ -264,9 +312,14 @@ resBlock.addEventListener("click", (event) => {
   }
   if (event.target.classList[1] === "addAllBtn") {
     const id = event.target.classList[0].slice(3);
-    dataArr.forEach((elem, ind) => {
+    dataObj.dataList.forEach((elem, ind) => {
       if (elem.id === id) {
         filteredDataArr[ind].otherSellersOffers = elem.otherSellersOffers;
+        for (let offer of elem.otherSellersOffers) {
+          if (!activeButtons.includes(offer.id)) {
+            activeButtons.push(offer.id);
+          }
+        }
       }
     });
     const buttons = document.querySelectorAll(`.b-${id}`);
@@ -274,6 +327,47 @@ resBlock.addEventListener("click", (event) => {
       if (button.classList.contains("offerAddBtn")) {
         button.classList.add("selectedBtn");
         button.innerHTML = "ВЫБРАН";
+      }
+    });
+  }
+  if (event.target.className === "offerDeleteBtn") {
+    const index = filteredDataArr.findIndex(
+      (item) => item.id === event.target.id
+    );
+    filteredDataArr.splice(index, 1);
+    fetch("/delete_item", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        delId: event.target.id,
+        dataArr: dataObj.dataList,
+      }),
+    })
+      .then((res) => {
+        return res.json();
+      })
+      .then((data) => {
+        if (data.status === "ok") {
+          dataObj.dataList = data.updatedData;
+          let itemCounter = 0;
+          removeResultInfo();
+          for (let priceData of data.updatedData) {
+            itemCounter++;
+            addItem(itemCounter, priceData, activeButtons);
+          }
+        }
+      });
+  }
+});
+
+resBlock.addEventListener("change", (event) => {
+  if (event.target.className === "priceInput") {
+    const id = event.target.id.replace("price-", "");
+    filteredDataArr.forEach((elem) => {
+      if (elem.id === id) {
+        const newPrice = event.target.value;
+        elem.ourItem.newPrice = newPrice;
+        newPriceList.push({ newPriceId: id, price: newPrice });
       }
     });
   }

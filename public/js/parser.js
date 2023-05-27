@@ -1,13 +1,17 @@
+// import { activeButtons, dataArr, filteredDataArr } from "./app";
+
 const loadDatabtn = document.querySelector("#loadData");
 const resultDiv = document.querySelector(".parser-result");
 const downloadBtn = document.querySelector(".download");
 const downloadLink = document.querySelector(".dowload-link");
 const body = document.querySelector("body");
 
-export let dataArr = [];
+export let dataObj = { dataList: [] };
 export let filteredDataArr = [];
+export let activeButtons = [];
+export let newPriceList = [];
 
-export function addItem(itemCounter, itemObject) {
+export function addItem(itemCounter, itemObject, activeButtons) {
   const itemWrapper = document.createElement("div");
   itemWrapper.classList.add("resultItemWrapper");
   itemWrapper.id = itemObject.id + "-1";
@@ -20,7 +24,8 @@ export function addItem(itemCounter, itemObject) {
   titleDiv.classList.add("resultHeadingTitle");
   deleteItemDiv.classList.add("resultHeadingDeleteItem");
   itemNumDiv.innerHTML = `<p>${itemCounter}</p>`;
-  titleDiv.innerHTML = `<p>${itemObject.ourItem.title}</p>`;
+  titleDiv.innerHTML = `<p><a target="blank" href="${itemObject.ourItem.link}">
+  ${itemObject.ourItem.title}</a></p>`;
   deleteItemDiv.innerHTML = `<button class="offerDeleteBtn" 
   id=${itemObject.id}>УДАЛИТЬ КАРТОЧКУ</button>`;
   headingDiv.appendChild(itemNumDiv);
@@ -42,16 +47,28 @@ export function addItem(itemCounter, itemObject) {
   const ourCodePar = document.createElement("p");
   const ourPricePar = document.createElement("p");
   const ourSalePar = document.createElement("p");
+  const ourPagesPar = document.createElement("p");
+  const ourCoverPar = document.createElement("p");
+  const ourWeightPar = document.createElement("p");
   ourCodePar.innerHTML = `<span class="tableItemDesc">Наш код WB: 
   </span>${itemObject.ourItem.ourWBCode}`;
   ourPricePar.innerHTML = `<span class="tableItemDesc">Наша цена: 
   </span><span class="resultItemPrice">${itemObject.ourItem.price}</span>`;
   ourSalePar.innerHTML = `<span class="tableItemDesc">Акция: 
   </span>${itemObject.ourItem.sale}`;
+  ourPagesPar.innerHTML = `<span class="tableItemDesc">Кол-во страниц: 
+  </span>${itemObject.ourItem.pages}`;
+  ourCoverPar.innerHTML = `<span class="tableItemDesc">Обложка: 
+  </span>${itemObject.ourItem.cover}`;
+  ourWeightPar.innerHTML = `<span class="tableItemDesc">Вес: 
+  </span>${itemObject.ourItem.weight}`;
   ourItemDiv.appendChild(ourImgWrapper);
   ourItemDiv.appendChild(ourCodePar);
   ourItemDiv.appendChild(ourPricePar);
   ourItemDiv.appendChild(ourSalePar);
+  ourItemDiv.appendChild(ourPagesPar);
+  ourItemDiv.appendChild(ourCoverPar);
+  ourItemDiv.appendChild(ourWeightPar);
   if (itemObject.lab.price) {
     const labPrice = document.createElement("p");
     labPrice.innerHTML = `<span class="tableItemDesc">Цена Лаб: </span><a target="blank" 
@@ -64,6 +81,21 @@ export function addItem(itemCounter, itemObject) {
     href="${itemObject.ozon.link}">${itemObject.ozon.price}</a>`;
     ourItemDiv.appendChild(ozPrice);
   }
+  const priceInput = document.createElement("input");
+  const label = document.createElement("label");
+  label.textContent = "ЦЕНА: ";
+  label.classList.add("priceLabel");
+  priceInput.setAttribute("type", "number");
+  priceInput.setAttribute("id", `price-${itemObject.id}`);
+  priceInput.classList.add("priceInput");
+  newPriceList.forEach((priceObj) => {
+    if (priceObj.newPriceId === itemObject.id) {
+      priceInput.value = priceObj.price;
+    }
+  });
+  label.appendChild(priceInput);
+  ourItemDiv.appendChild(label);
+
   const matchedOffersDiv = document.createElement("div");
   matchedOffersDiv.classList.add("matchedOffersWrapper");
   const matchedOffersHeading = document.createElement("h4");
@@ -116,6 +148,9 @@ export function addItem(itemCounter, itemObject) {
     noItemsBtn.innerHTML = "НЕТ ПОДХОДЯЩИХ";
     noItemsBtn.classList.add(`nm-${itemObject.id}`);
     noItemsBtn.classList.add("noMatchedItems");
+    if (activeButtons && activeButtons.includes(`nm-${itemObject.id}`)) {
+      noItemsBtn.classList.add("set");
+    }
     headingWrapper.appendChild(noItemsBtn);
     headingWrapper.appendChild(addAllBtn);
   }
@@ -155,6 +190,14 @@ export function addItem(itemCounter, itemObject) {
     otherOfferBtn.setAttribute("id", `${offerItem.id}`);
     otherOfferBtn.classList.add(`b-${itemObject.id}`);
     otherOfferBtn.classList.add("offerAddBtn");
+    if (activeButtons && activeButtons.includes(offerItem.id)) {
+      otherOfferBtn.classList.add("selectedBtn");
+    }
+    if (activeButtons && activeButtons.includes(`nm-${itemObject.id}`)) {
+      otherOfferBtn.classList.remove("selectedBtn");
+      otherOfferBtn.setAttribute("disabled", true);
+      otherOfferBtn.style.background = "#f24e4a";
+    }
     otherOfferBtn.textContent = "ДОБАВИТЬ";
     otherOfferItemWrapper.appendChild(otherOfferItemImgWrapper);
     otherOffersInfoWrapper.appendChild(otherOfferTitle);
@@ -202,8 +245,8 @@ loadDatabtn.addEventListener("click", () => {
       }
       if (data) {
         filteredDataArr = [];
-        dataArr = [...data];
-        dataArr.forEach((elem) => {
+        dataObj.dataList = [...data];
+        dataObj.dataList.forEach((elem) => {
           filteredDataArr.push({
             id: elem.id,
             ourItem: elem.ourItem,

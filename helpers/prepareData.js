@@ -7,6 +7,10 @@ export function prepareData(inputData) {
       Название: dataElement.ourItem.title,
       Наша_цена: dataElement.ourItem.price,
       Акция: dataElement.ourItem.sale,
+      Обложка: dataElement.ourItem.cover,
+      Вес: dataElement.ourItem.weight,
+      кол_стр: dataElement.ourItem.pages,
+      Новая_цена: dataElement.ourItem.newPrice,
       Цена_Озон: dataElement.ozon.price,
       Цена_Лаб: dataElement.lab.price,
     };
